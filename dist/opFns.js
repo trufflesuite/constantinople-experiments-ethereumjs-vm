@@ -1078,7 +1078,7 @@ function isCreateOpCode(opName) {
 }
 
 function getContractStorage(runState, address, key, cb) {
-  if (runState._common.gteHardfork('constantinople')) {
+  if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork('constantinople-1283-removed')) {
     runState.storageReader.getContractStorage(address, key, cb);
   } else {
     runState.stateManager.getContractStorage(address, key, cb);

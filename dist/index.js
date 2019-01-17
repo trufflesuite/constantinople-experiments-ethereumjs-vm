@@ -49,7 +49,7 @@ VM.deps = {
 
   var chain = opts.chain ? opts.chain : 'mainnet';
   var hardfork = opts.hardfork ? opts.hardfork : 'byzantium';
-  var supportedHardforks = ['byzantium', 'constantinople'];
+  var supportedHardforks = ['byzantium', 'constantinople', 'constantinople-1283-removed'];
   this._common = new Common(chain, hardfork, supportedHardforks);
 
   if (opts.stateManager) {

@@ -159,42 +159,45 @@ module.exports = {
     return new BN(word.shrn((31 - pos.toNumber()) * 8).andln(0xff));
   },
   SHL: function SHL(a, b, runState) {
-    if (!runState._common.gteHardfork('constantinople')) {
-      trap(ERROR.INVALID_OPCODE);
-    }
-    if (a.gten(256)) {
-      return new BN(0);
-    }
-    return b.shln(a.toNumber()).iand(utils.MAX_INTEGER);
-  },
-  SHR: function SHR(a, b, runState) {
-    if (!runState._common.gteHardfork('constantinople')) {
-      trap(ERROR.INVALID_OPCODE);
-    }
-    if (a.gten(256)) {
-      return new BN(0);
-    }
-    return b.shrn(a.toNumber());
-  },
-  SAR: function SAR(a, b, runState) {
-    if (!runState._common.gteHardfork('constantinople')) {
-      trap(ERROR.INVALID_OPCODE);
-    }
-    var isSigned = b.testn(255);
-    if (a.gten(256)) {
-      if (isSigned) {
-        return new BN(utils.MAX_INTEGER);
-      } else {
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork("constantinople-1283-removed")){
+      if (a.gten(256)) {
         return new BN(0);
       }
-    }
-    var c = b.shrn(a.toNumber());
-    if (isSigned) {
-      var shiftedOutWidth = 255 - a.toNumber();
-      var mask = utils.MAX_INTEGER.shrn(shiftedOutWidth).shln(shiftedOutWidth);
-      return c.ior(mask);
+      return b.shln(a.toNumber()).iand(utils.MAX_INTEGER);
     } else {
-      return c;
+      trap(ERROR.INVALID_OPCODE);
+    }
+  },
+  SHR: function SHR(a, b, runState) {
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork('constantinople-1283-removed')) {
+      if (a.gten(256)) {
+        return new BN(0);
+      }
+      return b.shrn(a.toNumber());
+    } else {
+      trap(ERROR.INVALID_OPCODE);
+    }
+  },
+  SAR: function SAR(a, b, runState) {
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork('constantinople-1283-removed')) {
+      var isSigned = b.testn(255);
+      if (a.gten(256)) {
+        if (isSigned) {
+          return new BN(utils.MAX_INTEGER);
+        } else {
+          return new BN(0);
+        }
+      }
+      var c = b.shrn(a.toNumber());
+      if (isSigned) {
+        var shiftedOutWidth = 255 - a.toNumber();
+        var mask = utils.MAX_INTEGER.shrn(shiftedOutWidth).shln(shiftedOutWidth);
+        return c.ior(mask);
+      } else {
+        return c;
+      }
+    } else {
+      trap(ERROR.INVALID_OPCODE);
     }
   },
   // 0x20 range - crypto
@@ -290,28 +293,29 @@ module.exports = {
     });
   },
   EXTCODEHASH: function EXTCODEHASH(address, runState, cb) {
-    if (!runState._common.gteHardfork('constantinople')) {
-      trap(ERROR.INVALID_OPCODE);
-    }
-    var stateManager = runState.stateManager;
-    address = addressToBuffer(address);
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork('constantinople-1283-removed')) {
+      var stateManager = runState.stateManager;
+      address = addressToBuffer(address);
 
-    stateManager.getAccount(address, function (err, account) {
-      if (err) return cb(err);
-
-      if (account.isEmpty()) {
-        return cb(null, new BN(0));
-      }
-
-      stateManager.getContractCode(address, function (err, code) {
+      stateManager.getAccount(address, function (err, account) {
         if (err) return cb(err);
-        if (code.length === 0) {
-          return cb(null, new BN(utils.KECCAK256_NULL));
+
+        if (account.isEmpty()) {
+          return cb(null, new BN(0));
         }
 
-        return cb(null, new BN(utils.keccak256(code)));
+        stateManager.getContractCode(address, function (err, code) {
+          if (err) return cb(err);
+          if (code.length === 0) {
+            return cb(null, new BN(utils.KECCAK256_NULL));
+          }
+
+          return cb(null, new BN(utils.keccak256(code)));
+        });
       });
-    });
+    } else {
+      trap(ERROR.INVALID_OPCODE);
+    }
   },
   RETURNDATASIZE: function RETURNDATASIZE(runState) {
     return new BN(runState.lastReturned.length);
@@ -540,34 +544,34 @@ module.exports = {
     makeCall(runState, options, localOpts, done);
   },
   CREATE2: function CREATE2(value, offset, length, salt, runState, done) {
-    if (!runState._common.gteHardfork('constantinople')) {
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork('constantinople-1283-removed')) {
+      if (runState.static) {
+        trap(ERROR.STATIC_STATE_CHANGE);
+      }
+  
+      var data = memLoad(runState, offset, length);
+  
+      // set up config
+      var options = {
+        value: value,
+        data: data,
+        salt: salt.toBuffer('be', 32)
+      };
+  
+      var localOpts = {
+        inOffset: offset,
+        inLength: length,
+        outOffset: new BN(0),
+        outLength: new BN(0)
+  
+        // Deduct gas costs for hashing
+      };subGas(runState, new BN(runState._common.param('gasPrices', 'sha3Word')).imul(length.divCeil(new BN(32))));
+      checkCallMemCost(runState, options, localOpts);
+      checkOutOfGas(runState, options);
+      makeCall(runState, options, localOpts, done);
+    } else {
       trap(ERROR.INVALID_OPCODE);
     }
-
-    if (runState.static) {
-      trap(ERROR.STATIC_STATE_CHANGE);
-    }
-
-    var data = memLoad(runState, offset, length);
-
-    // set up config
-    var options = {
-      value: value,
-      data: data,
-      salt: salt.toBuffer('be', 32)
-    };
-
-    var localOpts = {
-      inOffset: offset,
-      inLength: length,
-      outOffset: new BN(0),
-      outLength: new BN(0)
-
-      // Deduct gas costs for hashing
-    };subGas(runState, new BN(runState._common.param('gasPrices', 'sha3Word')).imul(length.divCeil(new BN(32))));
-    checkCallMemCost(runState, options, localOpts);
-    checkOutOfGas(runState, options);
-    makeCall(runState, options, localOpts, done);
   },
   CALL: function CALL(gasLimit, toAddress, value, inOffset, inLength, outOffset, outLength, runState, done) {
     var stateManager = runState.stateManager;

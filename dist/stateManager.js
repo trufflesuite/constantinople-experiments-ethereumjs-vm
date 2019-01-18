@@ -4,8 +4,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 var Buffer = require('safe-buffer').Buffer;
 var Trie = require('merkle-patricia-tree/secure.js');
-var Common = require('ethereumjs-common');
-var genesisStates = require('ethereumjs-common/genesisStates');
+var Common = require('ethereumjs-common').default;
+var genesisStates = require('../../constantinople-experiments-ethereumjs-common/dist/genesisStates');
 var async = require('async');
 var Account = require('ethereumjs-account');
 var Cache = require('./cache.js');

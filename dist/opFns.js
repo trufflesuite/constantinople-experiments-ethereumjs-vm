@@ -159,7 +159,7 @@ module.exports = {
     return new BN(word.shrn((31 - pos.toNumber()) * 8).andln(0xff));
   },
   SHL: function SHL(a, b, runState) {
-    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork("constantinople-1283-removed")){
+    if (runState._common.gteHardfork('constantinople') || runState._common.gteHardfork("constantinople-1283-removed")) {
       if (a.gten(256)) {
         return new BN(0);
       }
@@ -548,22 +548,22 @@ module.exports = {
       if (runState.static) {
         trap(ERROR.STATIC_STATE_CHANGE);
       }
-  
+
       var data = memLoad(runState, offset, length);
-  
+
       // set up config
       var options = {
         value: value,
         data: data,
         salt: salt.toBuffer('be', 32)
       };
-  
+
       var localOpts = {
         inOffset: offset,
         inLength: length,
         outOffset: new BN(0),
         outLength: new BN(0)
-  
+
         // Deduct gas costs for hashing
       };subGas(runState, new BN(runState._common.param('gasPrices', 'sha3Word')).imul(length.divCeil(new BN(32))));
       checkCallMemCost(runState, options, localOpts);
@@ -1082,7 +1082,7 @@ function isCreateOpCode(opName) {
 }
 
 function getContractStorage(runState, address, key, cb) {
-  if (runState._common.gteHardfork('constantinople')) {
+  if (runState._common._hardfork === 'constantinople') {
     runState.storageReader.getContractStorage(address, key, cb);
   } else {
     runState.stateManager.getContractStorage(address, key, cb);
@@ -1090,7 +1090,7 @@ function getContractStorage(runState, address, key, cb) {
 }
 
 function updateSstoreGas(runState, found, value) {
-  if (runState._common.gteHardfork('constantinople')) {
+  if (runState._common._hardfork === 'constantinople') {
     var original = found.original;
     var current = found.current;
     if (current.equals(value)) {

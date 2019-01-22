@@ -35,7 +35,7 @@
     "async-eventemitter": "^0.2.2",
     "ethereumjs-account": "^2.0.3",
     "ethereumjs-block": "~2.1.0",
-    "ethereumjs-common": "github:trufflesuite/constantinople-experiments-ethereumjs-common",
+    "ethereumjs-common": "github:davidmurdoch/constantinople-experiments-ethereumjs-common#add-constantinople-flags",
     "ethereumjs-util": "^6.0.0",
     "fake-merkle-patricia-tree": "^1.0.1",
     "functional-red-black-tree": "^1.0.1",

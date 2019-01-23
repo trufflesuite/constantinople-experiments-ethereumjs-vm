@@ -3,10 +3,8 @@
   "version": "2.5.1",
   "description": "An Ethereum VM implementation",
   "main": "dist/index.js",
-  "files": [
-    "dist"
-  ],
   "scripts": {
+    "install": "npm run build:dist",
     "coverage": "nyc npm run coverageTests && nyc report --reporter=text-lcov > .nyc_output/lcov.info",
     "coverageTests": "tape ./tests/api/*.js ./tests/tester.js -s",
     "coveralls": "npm run coverage && if [ -n \"$COVERALLS_REPO_TOKEN\" ]; then coveralls <.nyc_output/lcov.info; fi",
@@ -43,9 +41,7 @@
     "functional-red-black-tree": "^1.0.1",
     "merkle-patricia-tree": "^2.3.2",
     "rustbn.js": "~0.2.0",
-    "safe-buffer": "^5.1.1"
-  },
-  "devDependencies": {
+    "safe-buffer": "^5.1.1",
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "coveralls": "^3.0.0",

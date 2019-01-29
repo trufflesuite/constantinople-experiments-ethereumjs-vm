@@ -1,13 +1,17 @@
-const Buffer = require('safe-buffer').Buffer
-const Trie = require('merkle-patricia-tree/secure.js')
-const Common = require('ethereumjs-common').default
-const genesisStates = require('ethereumjs-common/dist/genesisStates')
-const async = require('async')
-const Account = require('ethereumjs-account')
-const Cache = require('./cache.js')
-const utils = require('ethereumjs-util')
-const BN = utils.BN
-const rlp = utils.rlp
+'use strict';
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var Buffer = require('safe-buffer').Buffer;
+var Trie = require('merkle-patricia-tree/secure.js');
+var Common = require('ethereumjs-common').default;
+var genesisStates = require('ethereumjs-common/dist/genesisStates');
+var async = require('async');
+var Account = require('ethereumjs-account');
+var Cache = require('./cache.js');
+var utils = require('ethereumjs-util');
+var BN = utils.BN;
+var rlp = utils.rlp;
 
 /**
  * Interface for getting and setting data from an underlying
@@ -15,7 +19,7 @@ const rlp = utils.rlp
  * @interface StateManager
  */
 
-module.exports = StateManager
+module.exports = StateManager;
 
 /**
  * Default implementation of the `StateManager` interface
@@ -25,24 +29,26 @@ module.exports = StateManager
  * @param {Common} [opts.common] - [`Common`](https://github.com/ethereumjs/ethereumjs-common) parameters of the chain
  * @param {Trie} [opts.trie] - a [`merkle-patricia-tree`](https://github.com/ethereumjs/merkle-patricia-tree) instance
  */
-function StateManager (opts = {}) {
-  var self = this
+function StateManager() {
+  var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-  var common = opts.common
+  var self = this;
+
+  var common = opts.common;
   if (!common) {
-    common = new Common('mainnet', 'byzantium')
+    common = new Common('mainnet', 'byzantium');
   }
-  self._common = common
+  self._common = common;
 
-  self._trie = opts.trie || new Trie()
-  self._storageTries = {} // the storage trie cache
-  self._cache = new Cache(self._trie)
-  self._touched = new Set()
-  self._touchedStack = []
-  self._checkpointCount = 0
+  self._trie = opts.trie || new Trie();
+  self._storageTries = {}; // the storage trie cache
+  self._cache = new Cache(self._trie);
+  self._touched = new Set();
+  self._touchedStack = [];
+  self._checkpointCount = 0;
 }
 
-var proto = StateManager.prototype
+var proto = StateManager.prototype;
 
 /**
  * Copies the current instance of the `DefaultStateManager`
@@ -52,8 +58,8 @@ var proto = StateManager.prototype
  * @method copy
  */
 proto.copy = function () {
-  return new StateManager({ trie: this._trie.copy() })
-}
+  return new StateManager({ trie: this._trie.copy() });
+};
 
 /**
  * Callback for `getAccount` method
@@ -72,8 +78,8 @@ proto.copy = function () {
  * @param {getAccount~callback} cb
  */
 proto.getAccount = function (address, cb) {
-  this._cache.getOrLoad(address, cb)
-}
+  this._cache.getOrLoad(address, cb);
+};
 
 /**
  * Saves an [`ethereumjs-account`](https://github.com/ethereumjs/ethereumjs-account)
@@ -85,15 +91,15 @@ proto.getAccount = function (address, cb) {
  * @param {Function} cb Callback function
  */
 proto.putAccount = function (address, account, cb) {
-  var self = this
+  var self = this;
   // TODO: dont save newly created accounts that have no balance
   // if (toAccount.balance.toString('hex') === '00') {
   // if they have money or a non-zero nonce or code, then write to tree
-  self._cache.put(address, account)
-  self._touched.add(address.toString('hex'))
+  self._cache.put(address, account);
+  self._touched.add(address.toString('hex'));
   // self._trie.put(addressHex, account.serialize(), cb)
-  cb()
-}
+  cb();
+};
 
 /**
  * Adds `value` to the state trie as code, and sets `codeHash` on the account
@@ -105,20 +111,20 @@ proto.putAccount = function (address, account, cb) {
  * @param {Function} cb Callback function
  */
 proto.putContractCode = function (address, value, cb) {
-  var self = this
+  var self = this;
   self.getAccount(address, function (err, account) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
     // TODO: setCode use trie.setRaw which creates a storage leak
     account.setCode(self._trie, value, function (err) {
       if (err) {
-        return cb(err)
+        return cb(err);
       }
-      self.putAccount(address, account, cb)
-    })
-  })
-}
+      self.putAccount(address, account, cb);
+    });
+  });
+};
 
 /**
  * Callback for `getContractCode` method
@@ -136,14 +142,14 @@ proto.putContractCode = function (address, value, cb) {
  * @param {getContractCode~callback} cb
  */
 proto.getContractCode = function (address, cb) {
-  var self = this
+  var self = this;
   self.getAccount(address, function (err, account) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
-    account.getCode(self._trie, cb)
-  })
-}
+    account.getCode(self._trie, cb);
+  });
+};
 
 /**
  * Creates a storage trie from the primary storage trie
@@ -155,18 +161,18 @@ proto.getContractCode = function (address, cb) {
  * @param {Function} cb Callback function
  */
 proto._lookupStorageTrie = function (address, cb) {
-  var self = this
+  var self = this;
   // from state trie
   self.getAccount(address, function (err, account) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
-    var storageTrie = self._trie.copy()
-    storageTrie.root = account.stateRoot
-    storageTrie._checkpoints = []
-    cb(null, storageTrie)
-  })
-}
+    var storageTrie = self._trie.copy();
+    storageTrie.root = account.stateRoot;
+    storageTrie._checkpoints = [];
+    cb(null, storageTrie);
+  });
+};
 
 /**
  * Gets the storage trie for an account from the storage
@@ -178,15 +184,15 @@ proto._lookupStorageTrie = function (address, cb) {
  * @param {Function} cb Callback function
  */
 proto._getStorageTrie = function (address, cb) {
-  var self = this
-  var storageTrie = self._storageTries[address.toString('hex')]
+  var self = this;
+  var storageTrie = self._storageTries[address.toString('hex')];
   // from storage cache
   if (storageTrie) {
-    return cb(null, storageTrie)
+    return cb(null, storageTrie);
   }
   // lookup from state
-  self._lookupStorageTrie(address, cb)
-}
+  self._lookupStorageTrie(address, cb);
+};
 
 /**
  * Callback for `getContractStorage` method
@@ -206,20 +212,20 @@ proto._getStorageTrie = function (address, cb) {
  * @param {getContractCode~callback} cb
  */
 proto.getContractStorage = function (address, key, cb) {
-  var self = this
+  var self = this;
   self._getStorageTrie(address, function (err, trie) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
     trie.get(key, function (err, value) {
       if (err) {
-        return cb(err)
+        return cb(err);
       }
-      var decoded = rlp.decode(value)
-      cb(null, decoded)
-    })
-  })
-}
+      var decoded = rlp.decode(value);
+      cb(null, decoded);
+    });
+  });
+};
 
 /**
  * Modifies the storage trie of an account
@@ -230,26 +236,26 @@ proto.getContractStorage = function (address, key, cb) {
  * @param {Function} modifyTrie function to modify the storage trie of the account
  */
 proto._modifyContractStorage = function (address, modifyTrie, cb) {
-  var self = this
+  var self = this;
   self._getStorageTrie(address, function (err, storageTrie) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
 
-    modifyTrie(storageTrie, finalize)
+    modifyTrie(storageTrie, finalize);
 
-    function finalize (err) {
-      if (err) return cb(err)
+    function finalize(err) {
+      if (err) return cb(err);
       // update storage cache
-      self._storageTries[address.toString('hex')] = storageTrie
+      self._storageTries[address.toString('hex')] = storageTrie;
       // update contract stateRoot
-      var contract = self._cache.get(address)
-      contract.stateRoot = storageTrie.root
-      self.putAccount(address, contract, cb)
-      self._touched.add(address.toString('hex'))
+      var contract = self._cache.get(address);
+      contract.stateRoot = storageTrie.root;
+      self.putAccount(address, contract, cb);
+      self._touched.add(address.toString('hex'));
     }
-  })
-}
+  });
+};
 
 /**
  * Adds value to the state trie for the `account`
@@ -262,18 +268,18 @@ proto._modifyContractStorage = function (address, modifyTrie, cb) {
  * @param {Function} cb Callback function
  */
 proto.putContractStorage = function (address, key, value, cb) {
-  var self = this
+  var self = this;
   self._modifyContractStorage(address, function (storageTrie, done) {
     if (value && value.length) {
       // format input
-      var encodedValue = rlp.encode(value)
-      storageTrie.put(key, encodedValue, done)
+      var encodedValue = rlp.encode(value);
+      storageTrie.put(key, encodedValue, done);
     } else {
       // deleting a value
-      storageTrie.del(key, done)
+      storageTrie.del(key, done);
     }
-  }, cb)
-}
+  }, cb);
+};
 
 /**
  * Clears all storage entries for the account corresponding to `address`
@@ -283,12 +289,12 @@ proto.putContractStorage = function (address, key, value, cb) {
  * @param {Function} cb Callback function
  */
 proto.clearContractStorage = function (address, cb) {
-  var self = this
+  var self = this;
   self._modifyContractStorage(address, function (storageTrie, done) {
-    storageTrie.root = storageTrie.EMPTY_TRIE_ROOT
-    done()
-  }, cb)
-}
+    storageTrie.root = storageTrie.EMPTY_TRIE_ROOT;
+    done();
+  }, cb);
+};
 
 /**
  * Checkpoints the current state of the StateManager instance.
@@ -299,13 +305,13 @@ proto.clearContractStorage = function (address, cb) {
  * @param {Function} cb Callback function
  */
 proto.checkpoint = function (cb) {
-  var self = this
-  self._trie.checkpoint()
-  self._cache.checkpoint()
-  self._touchedStack.push(new Set([...self._touched]))
-  self._checkpointCount++
-  cb()
-}
+  var self = this;
+  self._trie.checkpoint();
+  self._cache.checkpoint();
+  self._touchedStack.push(new Set([].concat(_toConsumableArray(self._touched))));
+  self._checkpointCount++;
+  cb();
+};
 
 /**
  * Commits the current change-set to the instance since the
@@ -315,18 +321,17 @@ proto.checkpoint = function (cb) {
  * @param {Function} cb Callback function
  */
 proto.commit = function (cb) {
-  var self = this
+  var self = this;
   // setup trie checkpointing
   self._trie.commit(function () {
     // setup cache checkpointing
-    self._cache.commit()
-    self._touchedStack.pop()
-    self._checkpointCount--
+    self._cache.commit();
+    self._touchedStack.pop();
+    self._checkpointCount--;
 
-    if (self._checkpointCount === 0) self._cache.flush(cb)
-    else cb()
-  })
-}
+    if (self._checkpointCount === 0) self._cache.flush(cb);else cb();
+  });
+};
 
 /**
  * Reverts the current change-set to the instance since the
@@ -336,18 +341,17 @@ proto.commit = function (cb) {
  * @param {Function} cb Callback function
  */
 proto.revert = function (cb) {
-  var self = this
+  var self = this;
   // setup trie checkpointing
-  self._trie.revert()
+  self._trie.revert();
   // setup cache checkpointing
-  self._cache.revert()
-  self._storageTries = {}
-  self._touched = self._touchedStack.pop()
-  self._checkpointCount--
+  self._cache.revert();
+  self._storageTries = {};
+  self._touched = self._touchedStack.pop();
+  self._checkpointCount--;
 
-  if (self._checkpointCount === 0) self._cache.flush(cb)
-  else cb()
-}
+  if (self._checkpointCount === 0) self._cache.flush(cb);else cb();
+};
 
 /**
  * Callback for `getStateRoot` method
@@ -366,18 +370,20 @@ proto.revert = function (cb) {
  * @param {getStateRoot~callback} cb
  */
 proto.getStateRoot = function (cb) {
-  var self = this
+  var self = this;
 
-  if (self._checkpointCount !== 0) { return cb(new Error('Cannot get state root with uncommitted checkpoints')) }
+  if (self._checkpointCount !== 0) {
+    return cb(new Error('Cannot get state root with uncommitted checkpoints'));
+  }
 
   self._cache.flush(function (err) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
-    var stateRoot = self._trie.root
-    cb(null, stateRoot)
-  })
-}
+    var stateRoot = self._trie.root;
+    cb(null, stateRoot);
+  });
+};
 
 /**
  * Sets the state of the instance to that represented
@@ -390,28 +396,32 @@ proto.getStateRoot = function (cb) {
  * @param {Function} cb Callback function
  */
 proto.setStateRoot = function (stateRoot, cb) {
-  var self = this
+  var self = this;
 
-  if (self._checkpointCount !== 0) { return cb(new Error('Cannot set state root with uncommitted checkpoints')) }
+  if (self._checkpointCount !== 0) {
+    return cb(new Error('Cannot set state root with uncommitted checkpoints'));
+  }
 
   self._cache.flush(function (err) {
-    if (err) { return cb(err) }
+    if (err) {
+      return cb(err);
+    }
     if (stateRoot === self._trie.EMPTY_TRIE_ROOT) {
-      self._trie.root = stateRoot
-      self._cache.clear()
-      return cb()
+      self._trie.root = stateRoot;
+      self._cache.clear();
+      return cb();
     }
     self._trie.checkRoot(stateRoot, function (err, hasRoot) {
       if (err || !hasRoot) {
-        cb(err || new Error('State trie does not contain state root'))
+        cb(err || new Error('State trie does not contain state root'));
       } else {
-        self._trie.root = stateRoot
-        self._cache.clear()
-        cb()
+        self._trie.root = stateRoot;
+        self._cache.clear();
+        cb();
       }
-    })
-  })
-}
+    });
+  });
+};
 
 /**
  * Callback for `dumpStorage` method
@@ -430,21 +440,21 @@ proto.setStateRoot = function (stateRoot, cb) {
  * @param {dumpStorage~callback} cb
  */
 proto.dumpStorage = function (address, cb) {
-  var self = this
+  var self = this;
   self._getStorageTrie(address, function (err, trie) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
-    var storage = {}
-    var stream = trie.createReadStream()
+    var storage = {};
+    var stream = trie.createReadStream();
     stream.on('data', function (val) {
-      storage[val.key.toString('hex')] = val.value.toString('hex')
-    })
+      storage[val.key.toString('hex')] = val.value.toString('hex');
+    });
     stream.on('end', function () {
-      cb(storage)
-    })
-  })
-}
+      cb(storage);
+    });
+  });
+};
 
 /**
  * Callback for `hasGenesisState` method
@@ -462,9 +472,9 @@ proto.dumpStorage = function (address, cb) {
  * @param {hasGenesisState~callback} cb
  */
 proto.hasGenesisState = function (cb) {
-  const root = this._common.genesis().stateRoot
-  this._trie.checkRoot(root, cb)
-}
+  var root = this._common.genesis().stateRoot;
+  this._trie.checkRoot(root, cb);
+};
 
 /**
  * Generates a canonical genesis state on the instance based on the
@@ -475,18 +485,20 @@ proto.hasGenesisState = function (cb) {
  * @param {Function} cb Callback function
  */
 proto.generateCanonicalGenesis = function (cb) {
-  var self = this
+  var self = this;
 
-  if (self._checkpointCount !== 0) { return cb(new Error('Cannot create genesis state with uncommitted checkpoints')) }
+  if (self._checkpointCount !== 0) {
+    return cb(new Error('Cannot create genesis state with uncommitted checkpoints'));
+  }
 
   this.hasGenesisState(function (err, genesis) {
     if (!genesis && !err) {
-      self.generateGenesis(genesisStates.genesisStateByName(self._common.chainName()), cb)
+      self.generateGenesis(genesisStates.genesisStateByName(self._common.chainName()), cb);
     } else {
-      cb(err)
+      cb(err);
     }
-  })
-}
+  });
+};
 
 /**
  * Initializes the provided genesis state into the state trie
@@ -496,18 +508,20 @@ proto.generateCanonicalGenesis = function (cb) {
  * @param {Function} cb Callback function
  */
 proto.generateGenesis = function (initState, cb) {
-  var self = this
+  var self = this;
 
-  if (self._checkpointCount !== 0) { return cb(new Error('Cannot create genesis state with uncommitted checkpoints')) }
+  if (self._checkpointCount !== 0) {
+    return cb(new Error('Cannot create genesis state with uncommitted checkpoints'));
+  }
 
-  var addresses = Object.keys(initState)
+  var addresses = Object.keys(initState);
   async.eachSeries(addresses, function (address, done) {
-    var account = new Account()
-    account.balance = new BN(initState[address]).toArrayLike(Buffer)
-    address = utils.toBuffer(address)
-    self._trie.put(address, account.serialize(), done)
-  }, cb)
-}
+    var account = new Account();
+    account.balance = new BN(initState[address]).toArrayLike(Buffer);
+    address = utils.toBuffer(address);
+    self._trie.put(address, account.serialize(), done);
+  }, cb);
+};
 
 /**
  * Callback for `accountIsEmpty` method
@@ -525,16 +539,16 @@ proto.generateGenesis = function (initState, cb) {
  * @param {accountIsEmpty~callback} cb
  */
 proto.accountIsEmpty = function (address, cb) {
-  var self = this
+  var self = this;
   self.getAccount.bind(this)(address, function (err, account) {
     if (err) {
-      return cb(err)
+      return cb(err);
     }
 
     // should be replaced by account.isEmpty() once updated
-    cb(null, account.nonce.toString('hex') === '' && account.balance.toString('hex') === '' && account.codeHash.toString('hex') === utils.KECCAK256_NULL_S)
-  })
-}
+    cb(null, account.nonce.toString('hex') === '' && account.balance.toString('hex') === '' && account.codeHash.toString('hex') === utils.KECCAK256_NULL_S);
+  });
+};
 
 /**
  * Removes accounts form the state trie that have been touched,
@@ -544,24 +558,23 @@ proto.accountIsEmpty = function (address, cb) {
  * @param {Function} cb Callback function
  */
 proto.cleanupTouchedAccounts = function (cb) {
-  var self = this
-  var touchedArray = Array.from(self._touched)
+  var self = this;
+  var touchedArray = Array.from(self._touched);
   async.forEach(touchedArray, function (addressHex, next) {
-    var address = Buffer.from(addressHex, 'hex')
+    var address = Buffer.from(addressHex, 'hex');
     self.accountIsEmpty(address, function (err, empty) {
       if (err) {
-        next(err)
-        return
+        next(err);
+        return;
       }
 
       if (empty) {
-        self._cache.del(address)
+        self._cache.del(address);
       }
-      next(null)
-    })
-  },
-  function () {
-    self._touched.clear()
-    cb()
-  })
-}
+      next(null);
+    });
+  }, function () {
+    self._touched.clear();
+    cb();
+  });
+};
